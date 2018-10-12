@@ -76,11 +76,15 @@ class MetaData_Container(object):
         else:
             for id, loss in enumerate(loss):
                 index=Batchmeta['index'][id]
-                tmp={'index':index,
-                    'memory_difficult':self.table['difficult_table'][index][epoch-1],
-                    'forget_degree':self.table['forget_table'][index][epoch-1],
+                difficult=self.table['difficult_table'][index][epoch-1]
+                forget=self.table['forget_table'][index][epoch-1]
+                level=self.table['level_table'][index][epoch-1]
+                tmp={
+                    'index':index,
+                    'memory_difficult':difficult,
+                    'forget_degree':forget,
                     'loss':loss,
-                    'level':self.table['level_table'][index][epoch-1]}
+                    'level':level}
                         #找到该样本在索引表中储存的META数据
                             #tmp['level']=1
                 Batchmeta_list.append(tmp)
@@ -107,20 +111,26 @@ class MetaData_Container(object):
             if id + 1 <= self.batchsize*self.CSR: 
                 if tmp['memory_difficult']>= self.difficult_threshold: # 难
                     tmp['level']=2
+                    print("ssdsdsbsb")
                     # discard hard instances, meaning that their losses are not contributed to gradient backward
                     minibatch_backward_loss  += 0
                     # then we should make its forget_degree larger because the model doesn't learn it
-                    tmp['forget_degree'] += 2*self.forget_degree_incrase               
+                    tmp['forget_degree'] = tmp['forget_degree']+ 2*self.forget_degree_incrase   
+                    #tmp['forget_degree'] += 2*self.forget_degree_incrase          
                 else: # 中
+                    print("sb")
                     tmp['level']=1
                     minibatch_backward_loss += tmp['loss']
                     self.Gradient_Backward_num +=1
-                    tmp['forget_degree'] -= self.forget_degree_incrase                    
+                    tmp['forget_degree'] = tmp['forget_degree'] - self.forget_degree_incrase    
+                    #tmp['forget_degree'] -= self.forget_degree_incrase                 
             else: # 易
                 tmp['level']=0
                 minibatch_backward_loss += tmp['loss']
                 self.Gradient_Backward_num +=1
-                tmp['forget_degree'] -= self.forget_degree_incrase 
+                
+                tmp['forget_degree'] =  tmp['forget_degree'] - self.forget_degree_incrase 
+                #tmp['forget_degree'] -= self.forget_degree_incrase 
             # final operation: 
             # we should redefine the difficult for each batch example
             if tmp['forget_degree'] < 0:              
@@ -156,6 +166,7 @@ class MetaData_Container(object):
         """update the values of table with epoch increases"""
         Table = self.table 
         if epoch > 0:
+            print('fuck!')
             
             for id in range(len(meta_batch)):
                 index=meta_batch[id]['index']
@@ -198,18 +209,16 @@ class MetaData_Container(object):
         """ 
                
         Batchmeta = self.MiniBatch_MetaData_Loader(loss,meta,epoch) 
-        print(epoch,'before')
-        print(self.table['forget_table'])
+        
         new_Batchmeta = self.Update_MiniBatch_MetaData(Batchmeta)
-        print(epoch,'after')
-        print(self.table['forget_table'])
-        ##if epoch>0:
-            #self.Update_Table_Index(epoch,new_Batchmeta)
+        
+        if epoch>0:
+            self.Update_Table_Index(epoch,new_Batchmeta)
 
-        #if epoch>self.hard_learning_epoch_begin:
-        #    self.hard_example_learning(new_Batchmeta,epoch)
+        if epoch>self.hard_learning_epoch_begin:
+            self.hard_example_learning(new_Batchmeta,epoch)
 
-        best_backward_gradient=self.Gradient_Backward_Loss#/#self.Gradient_Backward_num
+        best_backward_gradient=self.Gradient_Backward_Loss/self.Gradient_Backward_num
         return best_backward_gradient
         
     def Add_Meta_To_Trainset(self,trainset):
@@ -262,7 +271,7 @@ def train(train_loader,MetaData_Container, epoch):
 def main():
     batchsize=4
     total_epoch=6
-    meta_dataset=Meta_dataset(16)
+    meta_dataset=Meta_dataset(8)
     train_loader = torch.utils.data.DataLoader(
         meta_dataset,
         batch_size=batchsize,

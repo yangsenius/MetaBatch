@@ -38,7 +38,7 @@ class MetaData_Container(object):
         self.CSR = 0.3
         self.difficult_threshold=50
         self.forget_degree_incrase=20
-        self.easy_pattern_learning_epoch_ratio=0.667
+        self.easy_pattern_learning_epoch_ratio=0.5
         self.hard_learning_epoch_begin = self.easy_pattern_learning_epoch_ratio * total_epoch
 
         self.Gradient_Backward_num=0
@@ -49,7 +49,7 @@ class MetaData_Container(object):
         logger.info("==> difficult_threshold is {} range=[0,100]".format(self.difficult_threshold))
         logger.info("==> forget_degree_incrase is {} range=[0,100]".format(self.forget_degree_incrase))
         logger.info("==> easy_pattern_learning_epoch_ratio is {}".format(self.easy_pattern_learning_epoch_ratio))
-        logger.info("\n## # ###  ## ## #  ### ## ## ## ## ### ##")
+        logger.info("###############################################\n")
 
 
 
@@ -197,7 +197,7 @@ class MetaData_Container(object):
             for tmp in meta:
                 if tmp['level'] == 2: # means hard example
                     Level_Accmulation=self.table['level_accmulation'][tmp['index']][epoch]
-                    if (Level_Accmulation/epoch) > 1: # 如果每个周期的平均难度 超过中等（level=1）
+                    if (Level_Accmulation/epoch) > 1 and (Level_Accmulation/epoch) < 1.5: # 如果每个周期的平均难度 超过中等（level=1）且不是特别难 level<1.5
                         #定义其为'hard' example
                         self.Gradient_Backward_Loss += tmp['loss'] #把那些难度比较大的样本的loss 加入有效梯度中
                         self.Gradient_Backward_num +=1
@@ -213,8 +213,7 @@ class MetaData_Container(object):
         4.if 周期进行到困难样本学习阶段：对于mini-batch中没有对梯对回传贡献的样本，考察其历史平均难度，对难样本考虑其梯度
         4.根据更新后的mini-batch中的meta数据，更新全局动态索引表中meta数据
 
-        """ 
-               
+        """   
         Batchmeta = self.MiniBatch_MetaData_Loader(loss,meta,epoch) 
         
         new_Batchmeta = self.Update_MiniBatch_MetaData(Batchmeta)

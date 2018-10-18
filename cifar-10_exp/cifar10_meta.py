@@ -13,7 +13,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 logging.getLogger('').addHandler(console)
-logger.info('############# experiment %(asctime)s: -- %(pathname)s ################')
+import datetime
+logger.info("############# experiment {} ################".format(datetime.datetime.now()))
 ########################################################################
 # The output of torchvision datasets are PILImage images of range [0, 1].
 # We transform them to Tensors of normalized range [-1, 1].
@@ -154,11 +155,16 @@ def test_accuracy(net,classes,writer_dict):
     
     writer_dict['test_global_steps'] = global_steps + 1
 
-batchsize=64
-total_epoch=100
+batchsize=16
+total_epoch=70
 M_C=magic.MetaData_Container(len(trainset),batchsize,total_epoch)
 trainset_meta=M_C.Add_Meta_To_Trainset(trainset)
-trainloader = torch.utils.data.DataLoader(trainset_meta, batch_size=batchsize,
+
+#引入随机标签
+rand=0.3
+trainset_meta_randY=M_C.Random_Label_To_Trainset(trainset_meta,rand)
+logger.info('==> Label Y is changed randomly by {} possibility'.format(rand))
+trainloader = torch.utils.data.DataLoader(trainset_meta_randY, batch_size=batchsize,
                                           shuffle=True,drop_last=True)
 logger.info('==> batchsize = {}'.format(batchsize))
 logger.info('==> total_epoch = {}'.format(total_epoch))
@@ -187,20 +193,19 @@ for epoch in range(total_epoch):  # loop over the dataset multiple times
         #logger.info(meta_loss)
         optimizer.step()
         
+        
         # logger.info statistics
         running_loss += meta_loss.item()
-        if i % 200 == 199:    # logger.info every 2000 mini-batches
+        if i % 1000 == 999:    # logger.info every 2000 mini-batches
             end=time.time()
             logger.info('[%d, %5d] loss: %.3f Time consuming: %.3f'  %
-                  (epoch + 1, i + 1, running_loss / 200,(end-begin)/200))
+                  (epoch + 1, i + 1, running_loss / 1000,(end-begin)/1000))
             
             begin=time.time()
-            # tensorboardX
             writer = writer_dict['writer']
             global_steps = writer_dict['train_global_steps']
-            writer.add_scalar('train_loss', running_loss / 200, global_steps*200)
+            writer.add_scalar('meta_train_loss', running_loss / 1000, global_steps*1000)
             writer_dict['train_global_steps'] = global_steps + 1
-            
             running_loss = 0.0
     
     test_accuracy(net,classes,writer_dict)

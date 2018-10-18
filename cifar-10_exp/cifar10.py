@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(filename='cifar-10-log',
                     level=logging.DEBUG,
                     filemode='a',
-                    format='\n\n##############################################\n- %(levelname)s: %(message)s')
+                    format='-- %(levelname)s: %(message)s')
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
@@ -16,8 +16,8 @@ logging.getLogger('').addHandler(console)
 # The output of torchvision datasets are PILImage images of range [0, 1].
 # We transform them to Tensors of normalized range [-1, 1].
 
-
-
+import datetime
+logger.info("############# experiment {} ################".format(datetime.datetime.now()))
 
 ########################################################################
 # Let us show some of the training images, for fun.
@@ -153,15 +153,21 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
 
-batchsize=64
-total_epoch=100
+batchsize=16
+total_epoch=70
 
 transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
+import magic
+
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
+## rand label
+rand=0.3
+trainset=magic.trainset_random_label(trainset,rand)
+logger.info('==> Label Y is changed randomly by {} possibility = {}'.format(rand))
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batchsize,
                                           shuffle=True)
 
@@ -201,15 +207,15 @@ for epoch in range(total_epoch):  # loop over the dataset multiple times
         
         # logger.info statistics
         running_loss += loss.item()
-        if i % 200 == 199:    # logger.info every 2000 mini-batches
+        if i % 1000 == 999:    # logger.info every 2000 mini-batches
             end=time.time()
             logger.info('[%d, %5d] loss: %.3f time consuming: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 200,(end-begin)/200))
+                  (epoch + 1, i + 1, running_loss / 1000,(end-begin)/1000))
             
             begin=time.time()
             writer = writer_dict['writer']
             global_steps = writer_dict['train_global_steps']
-            writer.add_scalar('train_loss', running_loss / 200, global_steps*200)
+            writer.add_scalar('train_loss', running_loss / 1000, global_steps*1000)
             writer_dict['train_global_steps'] = global_steps + 1
             running_loss = 0.0
         

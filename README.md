@@ -17,3 +17,5 @@ Great！
 14.     Learning to Learn: Model regression networks for easy small sample learning. In: ECCV. (2016) 
 15.     Adam: A method for stochastic optimization. In: ICLR. (2015) 
 16.     Gradient-based hyperparameter optimization through reversible learning. In: ICML. (2015)
+17.     MentorNet: Learning Data-Driven Curriculum for Very Deep Neural Networks on Corrupted Labels. In: ICML.(2018)
+18.     Learning to reweight examples for robust deep learning.  In ICML 2018

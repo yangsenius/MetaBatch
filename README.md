@@ -17,4 +17,4 @@ Great！
 14.     Learning to Learn: Model regression networks for easy small sample learning. In: ECCV. (2016) 
 15.    Adam: A method for stochastic optimization. In: ICLR. (2015) 
 16.    Gradient-based hyperparameter optimization through reversible learning. In: ICML. (2015)
-- Gradient-based hyperparameter o
+> Gradient-based hyperparameter o

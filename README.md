@@ -19,3 +19,4 @@ Great！
 16.     Gradient-based hyperparameter optimization through reversible learning. In: ICML. (2015)
 17.     MentorNet: Learning Data-Driven Curriculum for Very Deep Neural Networks on Corrupted Labels. In: ICML.(2018)
 18.     Learning to reweight examples for robust deep learning.  In ICML 2018
+19.     Self-paced learning for latent variable models. In NIPS, 2010

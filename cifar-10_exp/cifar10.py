@@ -4,7 +4,8 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import logging
-logging.basicConfig(filename='cifar-10-log',
+import datetime
+logging.basicConfig(filename='printlog/cifar-10-log_{}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
                     level=logging.DEBUG,
                     filemode='a',
                     format='-- %(levelname)s: %(message)s')
@@ -16,7 +17,7 @@ logging.getLogger('').addHandler(console)
 # The output of torchvision datasets are PILImage images of range [0, 1].
 # We transform them to Tensors of normalized range [-1, 1].
 
-import datetime
+
 logger.info("############# experiment {} ################".format(datetime.datetime.now()))
 
 ########################################################################
@@ -165,9 +166,9 @@ import magic
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
 ## rand label
-rand=0.3
+rand=0.7
 trainset=magic.trainset_random_label(trainset,rand)
-logger.info('==> Label Y is changed randomly by {} possibility = {}'.format(rand))
+logger.info('==> Label Y is changed randomly by {} possibility '.format(rand))
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batchsize,
                                           shuffle=True)
 
@@ -215,7 +216,7 @@ for epoch in range(total_epoch):  # loop over the dataset multiple times
             begin=time.time()
             writer = writer_dict['writer']
             global_steps = writer_dict['train_global_steps']
-            writer.add_scalar('train_loss', running_loss / 1000, global_steps*1000)
+            writer.add_scalar('train_loss', running_loss , global_steps*1000)
             writer_dict['train_global_steps'] = global_steps + 1
             running_loss = 0.0
         

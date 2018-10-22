@@ -4,7 +4,8 @@ import torchvision
 import torchvision.transforms as transforms
 
 import logging
-logging.basicConfig(filename='cifar-10-meta-log',
+import datetime
+logging.basicConfig(filename='printlog/cifar-10-meta-log_{}'.format(datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')),
                     level=logging.DEBUG,
                     filemode='a',
                     format='%(levelname)s: %(message)s')
@@ -13,7 +14,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 logging.getLogger('').addHandler(console)
-import datetime
+
 logger.info("############# experiment {} ################".format(datetime.datetime.now()))
 ########################################################################
 # The output of torchvision datasets are PILImage images of range [0, 1].
@@ -30,7 +31,7 @@ trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
 testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                        download=True, transform=transform)
 testloader = torch.utils.data.DataLoader(testset, batch_size=16,
-                                         shuffle=False,drop_last=True)
+                                         shuffle=False,drop_last=True,num_workers=4)
 
 classes = ('plane', 'car', 'bird', 'cat',
            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
@@ -86,8 +87,10 @@ class Net(nn.Module):
 ### CNN
 #net = torch.nn.DataParallel(Net()).cuda()
 #### ResNet50
-net = torch.nn.DataParallel(resnet18).cuda()
-net=net.train()
+#net = torch.nn.DataParallel(resnet18).cuda()
+net = torch.nn.DataParallel(Net())
+#net = Net()
+net=net.train().cuda()
 logger.info(">>> total params: {:.2f}M".format(sum(p.numel() for p in net.parameters()) / 1000000.0))
 
 
@@ -114,10 +117,10 @@ def test_accuracy(net,classes,writer_dict):
     with torch.no_grad():
         for data in testloader:
             images, labels = data
-            outputs = net(images.cuda())
+            outputs = net(images.cuda()).cpu()
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
-            correct += (predicted == labels.cuda()).sum().item()
+            correct += (predicted == labels).sum().item()
 
     logger.info('Accuracy of the network on the 10000 test images: %d %%' % (
         100 * correct / total))
@@ -139,9 +142,9 @@ def test_accuracy(net,classes,writer_dict):
     with torch.no_grad():
         for data in testloader:
             images, labels = data
-            outputs = net(images)
+            outputs = net(images.cuda()).cpu()
             _, predicted = torch.max(outputs, 1)
-            c = (predicted == labels.cuda()).squeeze()
+            c = (predicted == labels).squeeze()
             for i in range(4):
                 label = labels[i]
                 class_correct[label] += c[i].item()
@@ -156,16 +159,16 @@ def test_accuracy(net,classes,writer_dict):
     writer_dict['test_global_steps'] = global_steps + 1
 
 batchsize=16
-total_epoch=70
+total_epoch=40
 M_C=magic.MetaData_Container(len(trainset),batchsize,total_epoch)
 trainset_meta=M_C.Add_Meta_To_Trainset(trainset)
 
 #引入随机标签
-rand=0.3
+rand=0.7
 trainset_meta_randY=M_C.Random_Label_To_Trainset(trainset_meta,rand)
 logger.info('==> Label Y is changed randomly by {} possibility'.format(rand))
 trainloader = torch.utils.data.DataLoader(trainset_meta_randY, batch_size=batchsize,
-                                          shuffle=True,drop_last=True)
+                                          shuffle=True,drop_last=True,num_workers=4)
 logger.info('==> batchsize = {}'.format(batchsize))
 logger.info('==> total_epoch = {}'.format(total_epoch))
 logger.info('==> dataset size = {}'.format(len(trainset)))
@@ -182,8 +185,8 @@ for epoch in range(total_epoch):  # loop over the dataset multiple times
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = net(inputs)
-        loss = criterion(outputs.cuda(), labels.cuda())
+        outputs = net(inputs.cuda()).cpu()
+        loss = criterion(outputs, labels)
         #loss=loss.mean(dim=0)
         #logger.info(loss.mean(dim=0))
         # make sure the loss is divided into each example in minibatch
@@ -209,6 +212,8 @@ for epoch in range(total_epoch):  # loop over the dataset multiple times
             running_loss = 0.0
     
     test_accuracy(net,classes,writer_dict)
+    M_C.Output_CSV_Table()
+
 
 logger.info('Finished Training')
 

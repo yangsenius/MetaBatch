@@ -4,7 +4,7 @@
 # Email: yangsenius@seu.edu.cn
 
 from __future__ import absolute_import
-
+import os
 import logging
 
 import numpy as np
@@ -35,7 +35,7 @@ class MetaData_Container(object):
         #self.ID_list=[]  #面向整个数据集建立 全局动态唯一索引表
         #self.MetaData_Dict=[] #面向整个数据集建立 全局动态唯一索引表
 
-        self.CSR = 0.3
+        self.CSR = 0.7
         self.difficult_threshold=50
         self.forget_degree_incrase=20
         self.easy_pattern_learning_epoch_ratio=0.5
@@ -235,6 +235,29 @@ class MetaData_Container(object):
         trainset_randY=trainset_random_label(trainset,rand_possibility)
         return trainset_randY
 
+    def Output_CSV_Table(self,table_dir_name='dynamic_table'):
+        isExists=os.path.exists(table_dir_name)
+        if not isExists:
+            os.makedirs(table_dir_name) 
+        
+        logger.info('==>> difficult table is \n{}\n0:easy\n1:medium\n2:hard'.format(self.table['difficult_table']))
+        Difficult_Table=self.table['difficult_table']
+        table1=Difficult_Table.numpy().astype(int)
+        data1 = pd.DataFrame(table1)
+        data1.to_csv(os.path.join(table_dir_name,'difficult_talbe.csv'))
+
+        logger.info('==>> level table is \n{}'.format(self.table['level_table']))
+        Level_Table=self.table['level_table']
+        table2=Level_Table.numpy().astype(int)
+        data2 = pd.DataFrame(table2)
+        data2.to_csv(os.path.join(table_dir_name,'level_talbe.csv'))
+
+        logger.info('==>> loss table is \n{}'.format(self.table['loss_table']))
+        Loss_Table=self.table['loss_table']
+        table3=Loss_Table.detach().numpy()
+        data3 = pd.DataFrame(table3)
+        data3.to_csv(os.path.join(table_dir_name,'loss_talbe.csv'))
+
 class trainset_add_meta(torch.utils.data.Dataset):
     
     def __init__(self,trainset):
@@ -314,11 +337,7 @@ def main():
         train(train_loader,SEU_YS,epoch)
 
     #print(SEU_YS.MetaData_Dict)
-    logger.info('==>> difficult table is \n{}\n0:easy\n1:medium\n2:hard'.format(SEU_YS.table['forget_table']))
-    Difficult_Table=SEU_YS.table['forget_table']
-    table=Difficult_Table.numpy().astype(int)
-    data1 = pd.DataFrame(table)
-    data1.to_csv('talbe.csv')
+        SEU_YS.Output_CSV_Table()
 
 if __name__ =='__main__':
     main()
